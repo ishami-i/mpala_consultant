@@ -1,17 +1,23 @@
-import { NavLink } from "react-router-dom";
+import { company } from "../data/company";
 
 export default function Experience() {
-    return (
-        <>
-            <div className="experience">
-                <h2>Our Experience</h2>
-                <p>
-                    With years of experience in the consulting industry, we have successfully assisted numerous clients across various sectors. Our team of experts brings a wealth of knowledge and insights to every project, ensuring that our clients receive the best possible solutions tailored to their unique needs.
-                </p>
-                <p>
-                    We have a proven track record of delivering results that drive growth and innovation for our clients. Our experience spans across strategic planning, market analysis, technology implementation, and more, allowing us to provide comprehensive support for businesses looking to thrive in today's competitive landscape.
-                </p>
-            </div>
-        </>
-    );
+  return (
+    <section id="experience" className="band">
+      <div className="wrap split">
+        <div>
+          <p className="big-number">{company.yearsExperience}</p>
+          <p className="big-label">years in the business</p>
+        </div>
+        <div>
+          <h2>Our experience</h2>
+          <p>
+            Our team has worked for over two decades across construction, architectural studies, land services and consultancy. That time has taught us how to avoid problems before they cost our clients money.
+          </p>
+          <p>
+            From the first land check to the finished work, you deal with people who have done it many times.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
 }

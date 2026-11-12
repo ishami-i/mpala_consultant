@@ -1,28 +1,32 @@
-import React from "react";
+import { company } from "../data/company";
 
 export default function AboutCompany() {
-    return (
-        <>
-        <div className="about-company">
-            <h2>About Our Company</h2>
-            <p>
-                We are a leading consulting firm specializing in providing innovative solutions to businesses worldwide. Our team of experts is dedicated to helping our clients achieve their goals through strategic planning, market analysis, and cutting-edge technology.
-            </p>
-            <p>
-                With years of experience in the industry, we have built a reputation for delivering exceptional results and fostering long-term partnerships with our clients. Our commitment to excellence and customer satisfaction sets us apart in the competitive consulting landscape.
-            </p>
-            <h3>Our Mission</h3>
-            <p>
-                Our mission is to empower businesses to thrive in an ever-changing market by providing tailored solutions that drive growth and innovation. We strive to be a trusted partner for our clients, helping them navigate challenges and seize opportunities for success.
-            </p>
-            <h3>Our Values</h3>
-            <ul>
-                <li>Integrity: We uphold the highest ethical standards in all our interactions.</li>
-                <li>Innovation: We embrace creativity and continuously seek new ways to solve problems.</li>
-                <li>Collaboration: We believe in the power of teamwork and value diverse perspectives.</li>
-                <li>Excellence: We are committed to delivering outstanding results for our clients.</li>
-            </ul>
+  return (
+    <section id="about" className="band">
+      <div className="wrap split">
+        <div>
+          <h2>About {company.name}</h2>
+          <p>
+            We are a consulting and construction company working with clients on land, design and building projects. Our team has more than two decades of experience in the business.
+          </p>
+          <p>
+            We are a registered business, TIN <strong>{company.tin}</strong>.
+          </p>
+          <h3>Our mission</h3>
+          <p>
+            To give every client honest advice and solid work, so that their land and their projects turn into something they can rely on.
+          </p>
         </div>
-        </>
-    );
+        <div>
+          <h3>Our values</h3>
+          <dl className="values">
+            <dt>Integrity</dt><dd>We uphold the highest ethical standards in all our dealings.</dd>
+            <dt>Experience</dt><dd>Our team has over 20 years in the business and knows what works.</dd>
+            <dt>Collaboration</dt><dd>We listen first and work closely with every client.</dd>
+            <dt>Excellence</dt><dd>We are committed to outstanding results on every project.</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+  );
 }
