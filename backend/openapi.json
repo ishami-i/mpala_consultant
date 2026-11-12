@@ -36,7 +36,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Create a user",
+        "summary": "Create a user (disabled in production)",
         "requestBody": {
           "required": true,
           "content": {
@@ -93,6 +93,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Registration is closed (ALLOW_REGISTRATION=false)"
           }
         }
       }

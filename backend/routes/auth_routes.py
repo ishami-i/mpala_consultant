@@ -11,6 +11,8 @@ auth_routes = Blueprint("auth_routes", __name__)
 # registering user
 @auth_routes.route("/register", methods=["POST"])
 def register():
+    if not config.ALLOW_REGISTRATION:
+        return jsonify({"error": "Registration is closed"}), 403
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
