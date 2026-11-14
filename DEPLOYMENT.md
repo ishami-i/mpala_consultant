@@ -84,6 +84,35 @@ Set at least these:
 
 `deploy.sh` also sets `DASHBOARD_URL` to `https://<your-domain>/admin` and `ALLOW_REGISTRATION=false` if they are missing, and it refuses to continue if the rest is still a placeholder.
 
+#### Email settings: Cloudflare or Gmail
+
+The app sends two emails: the short "new project" note to `COMPANY_EMAIL`, and a thank-you to the client. Receiving mail on your domain and sending mail from the app are two different things in Cloudflare.
+
+**Receiving (Cloudflare Email Routing, free).** In the Cloudflare dashboard, open your domain, then **Email Routing**.
+1. Under **Destination addresses**, add a real inbox you can open (for example your Gmail) and click the verification link Cloudflare emails to it. The status changes from *Pending* to *Verified*. Do not add `info@yourdomain` itself as a destination: that mailbox does not exist yet, so the verification email can never be read and it stays *Pending*.
+2. Under **Routing rules**, create custom addresses such as `info@yourdomain` and `admin@yourdomain` and send them to that verified inbox.
+
+Routing only forwards incoming mail. It cannot send, so the app needs one of these for sending:
+
+**Option A, Cloudflare Email Service (sends from `no-reply@yourdomain`).** Email Sending is in beta, and sending to anyone other than your verified destination addresses needs the Workers Paid plan. Onboard the domain under **Email Sending** (Cloudflare adds the SPF and DKIM records), create an API token with the **Email Sending: Edit** permission, then set:
+
+```
+MAIL_SERVER=smtp.mx.cloudflare.net
+MAIL_PORT=465
+MAIL_USE_SSL=True
+MAIL_USE_TLS=False
+MAIL_USERNAME=api_token
+MAIL_PASSWORD=<the API token>
+MAIL_FROM=no-reply@yourdomain.com
+COMPANY_EMAIL=info@yourdomain.com
+```
+
+`MAIL_USERNAME` is the literal text `api_token`; the token goes in `MAIL_PASSWORD`. Cloudflare accepts SMTP only on port 465 with SSL, not 587.
+
+**Option B, Gmail (free).** Turn on 2-step verification, create an app password, then set `MAIL_SERVER=smtp.gmail.com`, `MAIL_PORT=587`, `MAIL_USE_TLS=True`, `MAIL_USERNAME=<your Gmail address>` and `MAIL_PASSWORD=<the app password>`. You can still use Cloudflare Email Routing for `info@yourdomain` (receiving) at the same time.
+
+`ADMIN_EMAILS` is only the list of logins allowed into the dashboard. The app never sends mail to it, so `admin@yourdomain.com` works there even if you do not route it.
+
 Protect the file: `chmod 600 backend/.env`.
 
 ## 6. Run `deploy.sh`
@@ -197,17 +226,81 @@ To automate it, add a daily job with `crontab -e` and keep copies off the server
 - [ ] Database and `backend/uploads` backups are taken and stored off the server.
 - [ ] Optional: hide the API documentation page by adding `location /api/docs { return 404; }` above `location /api/` in the nginx file, then reload nginx.
 
+## Small servers (512 MB to 1 GB of RAM)
+
+A 512 MB server cannot run MySQL 8 and build the website without help: Linux kills the biggest process when memory runs out, and `systemctl status mysql` shows `Result: oom-kill`. Do these before `./deploy.sh`.
+
+**1. Add 2 GB of swap** (check `free -h` first; if Swap shows 0B you need this):
+
+```bash
+fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
+free -h
+```
+
+If `swapon` says "Operation not permitted", the server is a container that does not allow swap: use MariaDB (`apt install mariadb-server`, same SQL steps) or ask your provider for a larger plan.
+
+**2. Make MySQL use less memory.** Create `/etc/mysql/conf.d/lowmem.cnf`:
+
+```
+[mysqld]
+performance_schema = OFF
+mysqlx = OFF
+skip-log-bin
+innodb_buffer_pool_size = 64M
+innodb_log_buffer_size = 8M
+key_buffer_size = 8M
+max_connections = 25
+table_open_cache = 128
+table_definition_cache = 128
+tmp_table_size = 16M
+max_heap_table_size = 16M
+```
+
+**3. Finish a MySQL install that was interrupted:**
+
+```bash
+dpkg --configure -a
+systemctl status mysql --no-pager
+```
+
+It should say `active (running)`. If configuration still fails and you have no data yet, start clean: `apt purge -y mysql-server mysql-server-8.0 mysql-server-core-8.0 && rm -rf /var/lib/mysql && apt install -y mysql-server`.
+
+**4. Use a current Node.js.** Ubuntu's `nodejs` package is version 18, which is too old for the website build (`deploy.sh` now stops with a clear message). Replace it with Node 22:
+
+```bash
+apt remove -y nodejs npm libnode-dev
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt install -y nodejs
+node -v      # v22.12 or higher
+```
+
+**5. If the website build is still killed**, build it on your own computer and upload the result:
+
+```bash
+VITE_API_URL=https://example.com/api npm run build
+rsync -avz --delete dist/ root@your-server:/var/www/mpala/
+```
+
+Then run `./deploy.sh` on the server as usual (it rebuilds, so make sure swap is on, or skip this server-side build by publishing the uploaded `dist/`).
+
 ## Troubleshooting
 
 | Problem | What to do |
 |---|---|
 | `deploy.sh` lists settings to fix | Edit `backend/.env` as listed and run it again. |
+| `mysql.service ... Result: oom-kill` | The server ran out of memory. Follow "Small servers" above: add swap and the low-memory MySQL config. |
+| `deploy.sh` says Node.js is too old | Install Node 22 from NodeSource ("Small servers", step 4). |
+| `sudo: unable to resolve host` | Harmless. Fix it with `echo "127.0.1.1 $(hostname)" >> /etc/hosts`. |
 | `Could not set up MySQL` | Check `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, that MySQL is running (`sudo systemctl status mysql`) and that the user has rights on the database (step 3). |
 | `502 Bad Gateway` | The API is not running or uses another port. Check `sudo systemctl status mpala-api`, the logs, and that `BACKEND_PORT` matches the nginx file. |
 | Website loads but forms and dashboard fail | The site was built for a different address. Run `./deploy.sh --domain <the real domain>` again and re-publish `dist/`. |
 | Refreshing `/admin` shows `404` | The nginx file is missing `try_files $uri /index.html;` in `location /`. Use the generated file. |
 | Photo upload fails with `413` or "too large" | nginx limits uploads to 1 MB by default. The generated nginx file sets `client_max_body_size 40m;`; if you wrote your own, add it and reload nginx. Also send fewer photos at once. |
 | Dashboard says "This account is not an admin" | The sign-in email is not in `ADMIN_EMAILS`. Add it and run `sudo systemctl restart mpala-api`. |
+| `535 Authentication failed` in the API log with Cloudflare | `MAIL_USERNAME` must be exactly `api_token`, `MAIL_PASSWORD` the API token with **Email Sending: Edit**, and `MAIL_USE_SSL=True` with port `465`. |
+| `550 Sender denied` in the API log with Cloudflare | The domain in `MAIL_FROM` is not onboarded under **Email Sending** on the account that owns the token. |
 | No emails arrive | Check the `MAIL_*` values and `COMPANY_EMAIL`; look for "Email failed" in the API logs. Gmail needs an app password. Projects are saved even when email fails. |
 | Certbot fails | The domain's DNS must point to this server and port 80 must be open. Check with `dig +short example.com`. |
 | Welcome page of nginx shows instead of the site | The default site is still enabled: `sudo rm -f /etc/nginx/sites-enabled/default` and reload nginx. |

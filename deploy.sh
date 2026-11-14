@@ -45,6 +45,11 @@ done
 
 have python3 || die "python3 is required"
 have node    || die "node is required"
+# The website build (Vite) needs Node 20.19+ or 22.12+. Ubuntu's own "nodejs" package is older.
+NODE_V="$(node -v | sed 's/^v//')"; NODE_MAJOR="${NODE_V%%.*}"; _r="${NODE_V#*.}"; NODE_MINOR="${_r%%.*}"
+if ! { [[ "$NODE_MAJOR" -eq 20 && "$NODE_MINOR" -ge 19 ]] || [[ "$NODE_MAJOR" -eq 22 && "$NODE_MINOR" -ge 12 ]] || [[ "$NODE_MAJOR" -ge 23 ]]; }; then
+  die "Node.js $NODE_V is too old for the website build (need 20.19+ or 22.12+). Install Node 22 from NodeSource: see DEPLOYMENT.md, section \"Small servers\"."
+fi
 have npm     || die "npm is required"
 [[ -d backend && -f package.json ]] || die "run this from the project folder"
 [[ -f "$ENVF" ]] || die "$ENVF not found. Copy backend/.env.example to backend/.env and fill it in."
@@ -59,18 +64,29 @@ esac
 
 # ---------- settings only you can provide ----------
 problems=()
-need() { local v; v="$(val "$1")"; if [[ -z "$v" || "$v" == CHANGE_ME* || "$v" == change-* || "$v" == you@* || "$v" == your-* || "$v" == *yourcompany* ]]; then problems+=("$1 is not set"); fi; }
+need() { local v; v="$(val "$1")"; if [[ -z "$v" || "$v" == CHANGE_ME* || "$v" == change-* || "$v" == you@* || "$v" == your-* || "$v" == *yourcompany* || "$v" == *apppassword* || "$v" == *app-password* ]]; then problems+=("$1 is not set"); fi; }
 [[ "$(val DB_ENGINE)" == "mysql" ]] || problems+=("DB_ENGINE must be mysql for deployment")
 for k in DB_HOST DB_USER DB_PASSWORD DB_NAME COMPANY_EMAIL ADMIN_EMAILS MAIL_SERVER MAIL_USERNAME MAIL_PASSWORD; do need "$k"; done
+if [[ "$(val MAIL_USERNAME)" != *@* && -z "$(val MAIL_FROM)" ]]; then problems+=("MAIL_FROM is not set (needed when the SMTP login is not an email address, e.g. Cloudflare's api_token)"); fi
+if [[ "$(val MAIL_USE_SSL)" == "True" && "$(val MAIL_USE_TLS)" == "True" ]]; then problems+=("set only one of MAIL_USE_SSL (port 465) and MAIL_USE_TLS (port 587)"); fi
 JWT="$(val JWT_SECRET_KEY)"
 if [[ "${#JWT}" -lt 32 || "$JWT" == "change-me" ]]; then problems+=("JWT_SECRET_KEY must be a long random value (32+ characters)"); fi
 if [[ "$(val ALLOW_REGISTRATION)" != "false" ]]; then problems+=("ALLOW_REGISTRATION must be false in production"); fi
+# A key that appears twice is ambiguous: this script reads the first, the app reads the last
+for k in $(grep -oE '^[A-Za-z_]+=' "$ENVF" | tr -d '=' | sort | uniq -d); do problems+=("$k appears more than once in $ENVF: keep only one line"); done
 if [[ ${#problems[@]} -gt 0 ]]; then
   printf '\nFix these in %s, then run again:\n' "$ENVF" >&2
   printf '  - %s\n' "${problems[@]}" >&2
   exit 1
 fi
 echo "  settings look good"
+# Small servers: MySQL and the website build can be killed when memory runs out
+MEM_MB="$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 0)"
+SWAP_MB="$(awk '/SwapTotal/ {print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 0)"
+if [[ "$MEM_MB" -gt 0 && "$MEM_MB" -lt 900 && "$SWAP_MB" -lt 1000 ]]; then
+  echo "  warning: this server has ${MEM_MB} MB RAM and ${SWAP_MB} MB swap. MySQL and the build may be killed."
+  echo "           Add swap first: see DEPLOYMENT.md, section \"Small servers\"."
+fi
 PORT="$(val BACKEND_PORT)"
 
 # ---------- backend ----------
