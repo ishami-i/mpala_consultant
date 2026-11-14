@@ -19,3 +19,12 @@ CREATE TABLE IF NOT EXISTS projects (
     status ENUM('new','reviewing','contacted','closed') NOT NULL DEFAULT 'new',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS gallery_images (
+    image_id INT AUTO_INCREMENT PRIMARY KEY,
+    category VARCHAR(50) NOT NULL,
+    caption VARCHAR(255) NOT NULL DEFAULT '',
+    filename VARCHAR(100) NOT NULL UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_gallery_category (category)
+);

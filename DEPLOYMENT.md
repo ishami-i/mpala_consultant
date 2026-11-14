@@ -165,13 +165,16 @@ Your `backend/.env` and the data in MySQL are kept. Running `deploy.sh` again is
 
 ## 10. Backups
 
-The project data is in MySQL. Back it up regularly:
+The project data is in MySQL and the gallery photos are files in `backend/uploads/gallery/`. Back up **both** regularly:
 
 ```bash
 mysqldump -u mpala -p mpala > mpala_$(date +%F).sql
+tar czf mpala_photos_$(date +%F).tar.gz backend/uploads
 ```
 
-To automate it, add a daily job with `crontab -e` and keep copies off the server. To restore: `mysql -u mpala -p mpala < mpala_2026-01-01.sql`.
+Photos are not in git, and `git pull` / `./deploy.sh` never touch them.
+
+To automate it, add a daily job with `crontab -e` and keep copies off the server. To restore: `mysql -u mpala -p mpala < mpala_2026-01-01.sql` and `tar xzf mpala_photos_2026-01-01.tar.gz`.
 
 ## 11. Logs and day-to-day commands
 
@@ -191,7 +194,7 @@ To automate it, add a daily job with `crontab -e` and keep copies off the server
 - [ ] The site and dashboard are used over HTTPS only.
 - [ ] `backend/.env` has mode `600` and is not in git.
 - [ ] Firewall allows only SSH and web traffic; MySQL is not open to the internet.
-- [ ] Database backups are taken and stored off the server.
+- [ ] Database and `backend/uploads` backups are taken and stored off the server.
 - [ ] Optional: hide the API documentation page by adding `location /api/docs { return 404; }` above `location /api/` in the nginx file, then reload nginx.
 
 ## Troubleshooting
@@ -203,6 +206,7 @@ To automate it, add a daily job with `crontab -e` and keep copies off the server
 | `502 Bad Gateway` | The API is not running or uses another port. Check `sudo systemctl status mpala-api`, the logs, and that `BACKEND_PORT` matches the nginx file. |
 | Website loads but forms and dashboard fail | The site was built for a different address. Run `./deploy.sh --domain <the real domain>` again and re-publish `dist/`. |
 | Refreshing `/admin` shows `404` | The nginx file is missing `try_files $uri /index.html;` in `location /`. Use the generated file. |
+| Photo upload fails with `413` or "too large" | nginx limits uploads to 1 MB by default. The generated nginx file sets `client_max_body_size 40m;`; if you wrote your own, add it and reload nginx. Also send fewer photos at once. |
 | Dashboard says "This account is not an admin" | The sign-in email is not in `ADMIN_EMAILS`. Add it and run `sudo systemctl restart mpala-api`. |
 | No emails arrive | Check the `MAIL_*` values and `COMPANY_EMAIL`; look for "Email failed" in the API logs. Gmail needs an app password. Projects are saved even when email fails. |
 | Certbot fails | The domain's DNS must point to this server and port 80 must be open. Check with `dig +short example.com`. |

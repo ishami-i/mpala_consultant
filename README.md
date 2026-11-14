@@ -10,6 +10,7 @@ Clients describe their project on the website. The company gets a short email (n
 - **Project form:** name, email, phone, UPI (land parcel ID), location (province, district, sector), budget (RWF) and a description. The project is saved first; emails are sent after.
 - **Emails:** the company receives only the client's name, the budget and a link to the dashboard. The client receives a thank-you.
 - **Admin dashboard (`/admin`):** sign in, see all projects, open one to read everything the client sent, filter by status and change it (`new`, `reviewing`, `contacted`, `closed`).
+- **Photo gallery:** one gallery per service (construction and architecture first). Admins upload photos in the dashboard (**Gallery** tab); they appear on the public `/gallery` page at once, with filters per service and a full-size viewer. A "View gallery" link appears under a service on the home page as soon as it has photos.
 - **API with Swagger UI:** interactive documentation at `/api/docs`.
 - **Databases:** SQLite for local testing (default), MySQL for deployment.
 
@@ -44,7 +45,9 @@ mpala_consultant/
 ├── index.html, vite.config.js
 ├── src/                        React frontend (Vite + React Router)
 │   ├── App.jsx                 routes: /  /thank-you  /admin
-│   ├── pages/                  home.jsx, thankYou.jsx, admin.jsx (+ admin.css)
+│   ├── api/gallery.js          gallery requests
+│   ├── pages/                  home.jsx, thankYou.jsx, gallery.jsx,
+│   │                           admin.jsx, adminGallery.jsx (+ admin.css)
 │   ├── components/             header, footer, aboutCompany, services,
 │   │                           experiences, getIntouch, projectForm
 │   ├── data/
@@ -65,7 +68,9 @@ mpala_consultant/
     │   └── schema.sql          tables for MySQL
     ├── routes/
     │   ├── auth_routes.py      register, login
-    │   └── project_routes.py   submit project, admin list / detail / status
+    │   ├── project_routes.py   submit project, admin list / detail / status
+    │   └── gallery_routes.py   gallery list, photo upload and delete
+    ├── uploads/gallery/        uploaded photos (created automatically, not in git)
     └── email_notification/mailer.py
 ```
 
@@ -86,6 +91,8 @@ Settings live in `backend/.env`. `backend/.env.example` lists every key with com
 | `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS` | SMTP server (`MAIL_USE_TLS=True` for port 587) | port 587 |
 | `MAIL_USERNAME`, `MAIL_PASSWORD` | SMTP login (for Gmail use an app password) | |
 | `BACKEND_PORT` | API port | `5000` |
+| `UPLOAD_DIR` | Folder for gallery photos | `backend/uploads/gallery` |
+| `MAX_UPLOAD_MB` | Largest single photo, in MB | `8` |
 
 Without the email settings, projects are still saved and appear in the dashboard; only the emails are skipped.
 
@@ -96,6 +103,18 @@ Without the email settings, projects are still saved and appear in the dashboard
 - **Services:** the list at the top of `src/components/services.jsx`.
 - **Other text:** `src/components/aboutCompany.jsx`, `experiences.jsx` and the hero in `src/pages/home.jsx`.
 - **Colours and fonts:** the variables at the top of `src/site.css`.
+
+## Gallery
+
+1. Sign in at `/admin` and open the **Gallery** tab.
+2. Choose the service, add an optional caption, select one or more photos (JPG, PNG or WebP) and click **Upload photos**.
+3. The photos are saved in `backend/uploads/gallery/` and appear on `/gallery` and `/gallery/<service>` immediately. Delete a photo from the same tab.
+
+Notes:
+- Only the file's real content is trusted: anything that is not a JPG, PNG or WebP is refused. Photos are stored under random names.
+- Resize very large camera photos before uploading (about 2000 px wide is plenty for the web); the limit is `MAX_UPLOAD_MB` each.
+- The services that have a gallery are the list `GALLERY_CATEGORIES` in `backend/config.py`. To add one, add a line there and, to get the "View gallery" link, use the same slug in `src/components/services.jsx`.
+- Add `backend/uploads/` to `.gitignore` and include it in your backups.
 
 ## How a project moves through the system
 
@@ -117,6 +136,11 @@ Full interactive documentation: `/api/docs`. Summary:
 | `GET /api/admin/projects` | admin | List projects (summary) |
 | `GET /api/admin/projects/<id>` | admin | Everything about one project |
 | `PATCH /api/admin/projects/<id>/status` | admin | Set status |
+| `GET /api/gallery/categories` | public | Galleries with photo counts |
+| `GET /api/gallery` | public | List photos (`?category=slug`) |
+| `GET /api/uploads/<file>` | public | A photo file |
+| `POST /api/admin/gallery` | admin | Upload photos (form data: `category`, `caption`, `files`) |
+| `DELETE /api/admin/gallery/<id>` | admin | Delete a photo |
 
 Admin requests send `Authorization: Bearer <token>`.
 

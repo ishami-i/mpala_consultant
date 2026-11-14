@@ -16,3 +16,13 @@ CREATE TABLE IF NOT EXISTS projects (
     status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','reviewing','contacted','closed')),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS gallery_images (
+    image_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL,
+    caption TEXT NOT NULL DEFAULT '',
+    filename TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_gallery_category ON gallery_images (category);

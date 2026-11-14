@@ -137,6 +137,9 @@ server {
     root /var/www/mpala;
     index index.html;
 
+    # Gallery uploads from the dashboard (the API accepts up to 40 MB per upload)
+    client_max_body_size 40m;
+
     location /api/ {
         proxy_pass http://127.0.0.1:__PORT__;
         proxy_set_header Host $host;

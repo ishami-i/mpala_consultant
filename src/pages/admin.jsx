@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import AdminGallery from "./adminGallery";
 import "./admin.css";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -6,6 +7,7 @@ const STATUSES = ["new", "reviewing", "contacted", "closed"];
 
 const money = (n) => `${Number(n).toLocaleString()} RWF`;
 const day = (iso) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+const viewFromHash = () => (window.location.hash === "#gallery" ? "gallery" : "projects");
 const idFromHash = () => {
   const m = window.location.hash.match(/^#project-(\d+)$/);
   return m ? Number(m[1]) : null;
@@ -123,13 +125,14 @@ export default function Admin() {
   const [token, setToken] = useToken();
   const [projects, setProjects] = useState([]);
   const [selected, setSelected] = useState(idFromHash());
+  const [view, setView] = useState(viewFromHash());
   const [filter, setFilter] = useState("all");
   const [error, setError] = useState("");
 
   const signOut = useCallback(() => setToken(null), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const onHash = () => setSelected(idFromHash());
+    const onHash = () => { setSelected(idFromHash()); setView(viewFromHash()); };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -155,39 +158,49 @@ export default function Admin() {
   return (
     <div className="adm">
       <header className="adm-top">
-        <h1>Projects</h1>
-        <select aria-label="Filter by status" value={filter} onChange={(e) => setFilter(e.target.value)}>
-          <option value="all">All statuses</option>
-          {STATUSES.map((s) => <option key={s}>{s}</option>)}
-        </select>
+        <h1>Dashboard</h1>
+        <nav className="adm-tabs" aria-label="Sections">
+          <a href="#projects" aria-current={view === "projects" ? "page" : undefined}>Projects</a>
+          <a href="#gallery" aria-current={view === "gallery" ? "page" : undefined}>Gallery</a>
+        </nav>
+        {view === "projects" && (
+          <select aria-label="Filter by status" value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="all">All statuses</option>
+            {STATUSES.map((s) => <option key={s}>{s}</option>)}
+          </select>
+        )}
         <button className="adm-link" onClick={signOut}>Sign out</button>
       </header>
 
       {error && <p className="adm-error" role="alert">{error}</p>}
 
-      <div className="adm-grid">
-        <ul className="adm-list">
-          {shown.length === 0 && !error && <li className="adm-muted">No projects here yet.</li>}
-          {shown.map((p) => (
-            <li key={p.project_id}>
-              <a
-                href={`#project-${p.project_id}`}
-                aria-current={selected === p.project_id ? "true" : undefined}
-              >
-                <span className="adm-name">{p.owner_name}</span>
-                <span className="adm-meta">{money(p.budget)} · {p.location}</span>
-                <span className={`adm-pill s-${p.status}`}>{p.status}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
+      {view === "gallery" ? (
+        <AdminGallery token={token} onAuthFail={signOut} />
+      ) : (
+        <div className="adm-grid">
+          <ul className="adm-list">
+            {shown.length === 0 && !error && <li className="adm-muted">No projects here yet.</li>}
+            {shown.map((p) => (
+              <li key={p.project_id}>
+                <a
+                  href={`#project-${p.project_id}`}
+                  aria-current={selected === p.project_id ? "true" : undefined}
+                >
+                  <span className="adm-name">{p.owner_name}</span>
+                  <span className="adm-meta">{money(p.budget)} · {p.location}</span>
+                  <span className={`adm-pill s-${p.status}`}>{p.status}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
 
-        <section className="adm-pane">
-          {selected
-            ? <Detail id={selected} token={token} onStatus={updateStatus} onAuthFail={signOut} />
-            : <p className="adm-muted">Choose a project to see everything the client sent.</p>}
-        </section>
-      </div>
+          <section className="adm-pane">
+            {selected
+              ? <Detail id={selected} token={token} onStatus={updateStatus} onAuthFail={signOut} />
+              : <p className="adm-muted">Choose a project to see everything the client sent.</p>}
+          </section>
+        </div>
+      )}
     </div>
   );
 }
