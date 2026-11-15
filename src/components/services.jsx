@@ -1,16 +1,8 @@
 import { useEffect, useState } from "react";
 import { getCategories } from "../api/gallery";
+import { SERVICES } from "../data/services";
 
-// slug matches a gallery in backend/config.py (GALLERY_CATEGORIES)
-const SERVICES = [
-  ["construction", "Construction of infrastructure", "Roads, drainage, water and other infrastructure works, built to plan and to standard."],
-  ["architecture", "Architectural study", "Design studies for buildings and sites, from the first concept to drawings you can build from."],
-  ["consultancy", "General consultancy", "Practical advice on planning, costing and delivering your project."],
-  ["supply", "General supply", "Supply of materials and goods your project needs."],
-  ["land", "Land services", "Help with land matters on your plot, from the first check to the paperwork."],
-  ["topography", "Topography", "Topographic work that shows the true shape of your land before you design or build."],
-  ["brokerage", "Land sale and purchase brokerage", "We bring buyers and sellers together and guide both sides through the deal."],
-];
+const num = (i) => String(i + 1).padStart(2, "0");
 
 export default function Services() {
   const [counts, setCounts] = useState({});
@@ -22,21 +14,43 @@ export default function Services() {
       .catch(() => {});
   }, []);
 
+  const gallery = (s) =>
+    counts[s.slug] > 0 && (
+      <p className="service-gallery">
+        <a href={`/gallery/${s.slug}`}>View gallery ({counts[s.slug]} {counts[s.slug] === 1 ? "photo" : "photos"})</a>
+      </p>
+    );
+
+  const main = SERVICES.filter((s) => s.main);
+  const others = SERVICES.filter((s) => !s.main);
+
   return (
     <section id="services" className="band alt">
       <div className="wrap">
         <h2>Our services</h2>
-        <p className="lede">Everything a project needs, from the land to the finished building, under one team.</p>
+        <p className="lede">Architectural study and construction are our main business. We also support your project with land services and supply.</p>
+
+        <div className="main-services">
+          {main.map((s, i) => (
+            <article key={s.slug}>
+              <span className="num">{num(i)}</span>
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+              {gallery(s)}
+              <p className="service-gallery"><a href={`/?service=${s.slug}#contact`}>Request this service</a></p>
+            </article>
+          ))}
+        </div>
+
+        <h3 className="also">Also from us</h3>
         <ol className="services-list">
-          {SERVICES.map(([slug, title, text], i) => (
-            <li key={slug}>
-              <span className="num">{String(i + 1).padStart(2, "0")}</span>
+          {others.map((s, i) => (
+            <li key={s.slug}>
+              <span className="num">{num(i + main.length)}</span>
               <div>
-                <h3>{title}</h3>
-                <p>{text}</p>
-                {counts[slug] > 0 && (
-                  <p className="service-gallery"><a href={`/gallery/${slug}`}>View gallery ({counts[slug]} {counts[slug] === 1 ? "photo" : "photos"})</a></p>
-                )}
+                <h3>{s.title}{s.paid && <span className="paid-tag">Paid service</span>}</h3>
+                <p>{s.text}</p>
+                {gallery(s)}
               </div>
             </li>
           ))}

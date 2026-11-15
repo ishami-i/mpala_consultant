@@ -108,6 +108,7 @@ function Detail({ id, token, onStatus, onAuthFail }) {
       </label>
 
       <dl>
+        <dt>Service</dt><dd>{project.service_label || "Not specified"}{project.paid_service && " (paid service)"}</dd>
         <dt>Email</dt><dd><a href={`mailto:${project.email}`}>{project.email}</a></dd>
         <dt>Phone</dt><dd><a href={`tel:${project.phone}`}>{project.phone}</a></dd>
         <dt>UPI</dt><dd>{project.upi}</dd>
@@ -187,7 +188,7 @@ export default function Admin() {
                   aria-current={selected === p.project_id ? "true" : undefined}
                 >
                   <span className="adm-name">{p.owner_name}</span>
-                  <span className="adm-meta">{money(p.budget)} · {p.location}</span>
+                  <span className="adm-meta">{p.service_label ? p.service_label + " · " : ""}{money(p.budget)} · {p.location}</span>
                   <span className={`adm-pill s-${p.status}`}>{p.status}</span>
                 </a>
               </li>

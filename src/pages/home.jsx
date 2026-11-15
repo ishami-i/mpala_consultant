@@ -12,9 +12,12 @@ export default function Home() {
       <main>
         <section className="hero">
           <div className="wrap">
-            <h1>Land, design and construction, from a team with over 20 years behind it.</h1>
-            <p>Tell us about your plot, your plan and your budget. Our team reviews every project and replies personally.</p>
-            <a className="btn" href="#contact">Submit your project</a>
+            <h1>Architectural study and construction, from a team with over 20 years behind it.</h1>
+            <p>Our main business is architectural study (architectural design) and construction. We also offer land services, topography and land brokerage. Tell us about your plot and your budget, and our team replies personally.</p>
+            <div className="hero-actions">
+              <a className="btn" href="#contact">Submit your project</a>
+              <a className="btn-link" href="/gallery">See our work</a>
+            </div>
           </div>
         </section>
         <AboutCompany />

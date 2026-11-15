@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS projects (
     phone VARCHAR(50) NOT NULL,
     upi VARCHAR(100) NOT NULL,
     location VARCHAR(255) NOT NULL,
+    service VARCHAR(50) NOT NULL DEFAULT '',
     project_details TEXT NOT NULL,
     budget DECIMAL(15,2) NOT NULL,
     status ENUM('new','reviewing','contacted','closed') NOT NULL DEFAULT 'new',

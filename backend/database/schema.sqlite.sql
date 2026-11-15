@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS projects (
     phone TEXT NOT NULL,
     upi TEXT NOT NULL,
     location TEXT NOT NULL,
+    service TEXT NOT NULL DEFAULT '',
     project_details TEXT NOT NULL,
     budget REAL NOT NULL,
     status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','reviewing','contacted','closed')),

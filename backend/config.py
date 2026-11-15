@@ -6,9 +6,14 @@ load_dotenv()
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me")
 MAIL_SERVER = os.getenv("MAIL_SERVER")
 MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
-MAIL_USE_TLS = os.getenv("MAIL_USE_TLS") == "True"
+MAIL_USE_TLS = os.getenv("MAIL_USE_TLS") == "True"   # port 587 (STARTTLS), e.g. Gmail
+MAIL_USE_SSL = os.getenv("MAIL_USE_SSL") == "True"   # port 465 (implicit TLS), e.g. Cloudflare
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+# Address shown in the From line. Defaults to MAIL_USERNAME, which works when the SMTP login is
+# an email address (Gmail). Set it when the login is not one (Cloudflare's login is "api_token").
+MAIL_FROM = os.getenv("MAIL_FROM") or MAIL_USERNAME
+MAIL_DEFAULT_SENDER = MAIL_FROM
 
 # Who receives the "new project" email, and who may open the dashboard
 COMPANY_EMAIL = os.getenv("COMPANY_EMAIL", MAIL_USERNAME)
@@ -26,14 +31,18 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR") or os.path.join(
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", 8))      # per photo
 MAX_CONTENT_LENGTH = 40 * 1024 * 1024                    # whole upload request
 
-# slug, label. One gallery per service; the first two are shown first.
+# slug, label. These are also the services a client can choose in the project form.
+# One gallery per service; architectural study and construction come first (our main business).
 # To add a gallery for another service, add a line here and (optionally) a slug in services.jsx.
 GALLERY_CATEGORIES = [
-    ("construction", "Construction of infrastructure"),
     ("architecture", "Architectural study"),
+    ("construction", "Construction of infrastructure"),
     ("consultancy", "General consultancy"),
     ("supply", "General supply"),
     ("land", "Land services"),
-    ("topography", "Topography"),
-    ("brokerage", "Land sale and purchase"),
+    ("topography", "Topography and land survey"),
+    ("brokerage", "Land sale and purchase brokerage"),
 ]
+
+# Services the client pays for. Payment is arranged directly with the team, not on the website.
+PAID_SERVICES = {"topography", "brokerage"}

@@ -185,6 +185,7 @@
                   "phone",
                   "UPI",
                   "location",
+                  "service",
                   "projectDetails",
                   "budget"
                 ],
@@ -212,6 +213,19 @@
                   "budget": {
                     "type": "number",
                     "example": 5000000
+                  },
+                  "service": {
+                    "type": "string",
+                    "enum": [
+                      "architecture",
+                      "construction",
+                      "consultancy",
+                      "supply",
+                      "land",
+                      "topography",
+                      "brokerage"
+                    ],
+                    "example": "architecture"
                   }
                 }
               }

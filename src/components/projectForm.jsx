@@ -1,7 +1,14 @@
 import { useState } from "react";
 import locationsData from "../data/location.json";
 import { useNavigate } from "react-router-dom";
+import { SERVICES, PAID_NOTE } from "../data/services";
 
+
+// A link such as /?service=architecture#contact preselects the service
+function initialService() {
+    const s = new URLSearchParams(window.location.search).get("service");
+    return SERVICES.some((x) => x.slug === s) ? s : "";
+}
 
 export default function ProjectForm() {
     const [formData, setFormData] = useState({
@@ -10,12 +17,14 @@ export default function ProjectForm() {
         phone: "",
         UPI: "",
         location: "",
+        service: initialService(),
         projectDetails: "",
         budget: "",
     });
     const [error, setError] = useState("");
 
     const navigate = useNavigate();
+    const selected = SERVICES.find((s) => s.slug === formData.service);
 
     const handleChange = (e) => {
         setFormData({
@@ -83,6 +92,24 @@ export default function ProjectForm() {
                     </div>
                     <h3>Project details</h3>
                     <div>
+                        <label htmlFor="service">Service you need:</label>
+                        <select
+                            id="service"
+                            name="service"
+                            value={formData.service}
+                            onChange={handleChange}
+                            required
+                        >
+                            <option value="">Choose a service</option>
+                            {SERVICES.map((s) => (
+                                <option key={s.slug} value={s.slug}>
+                                    {s.title}{s.paid ? " (paid service)" : ""}
+                                </option>
+                            ))}
+                        </select>
+                        {selected?.paid && <p className="paid-note" role="status">{PAID_NOTE}</p>}
+                    </div>
+                    <div>
                         <label htmlFor="UPI">UPI:</label>
                         <input
                             type="text"
@@ -106,7 +133,7 @@ export default function ProjectForm() {
                             {Object.entries(locationsData).flatMap(([province, districts]) =>
                                 Object.entries(districts).map(([district, sectors]) => (
                                     <optgroup key={`${province}-${district}`} label={`${district}, ${province}`}>
-                                        {sectors.map((sector) => (
+                                        {[...new Set(sectors)].map((sector) => (
                                             <option key={sector} value={`${sector}, ${district}, ${province}`}>
                                                 {sector}
                                             </option>

@@ -89,18 +89,31 @@ Settings live in `backend/.env`. `backend/.env.example` lists every key with com
 | `COMPANY_EMAIL` | Where "new project" emails go | |
 | `DASHBOARD_URL` | Dashboard address used in the email link | `http://localhost:5173/admin` |
 | `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS` | SMTP server (`MAIL_USE_TLS=True` for port 587) | port 587 |
-| `MAIL_USERNAME`, `MAIL_PASSWORD` | SMTP login (for Gmail use an app password) | |
+| `MAIL_USERNAME`, `MAIL_PASSWORD` | SMTP login (for Gmail use an app password; for Cloudflare: `api_token` and an API token) | |
+| `MAIL_USE_SSL` | `True` for port 465 (Cloudflare). Use it instead of `MAIL_USE_TLS`. | `False` |
+| `MAIL_FROM` | Address in the From line. Needed when the login is not an email address. | `MAIL_USERNAME` |
 | `BACKEND_PORT` | API port | `5000` |
 | `UPLOAD_DIR` | Folder for gallery photos | `backend/uploads/gallery` |
 | `MAX_UPLOAD_MB` | Largest single photo, in MB | `8` |
 
 Without the email settings, projects are still saved and appear in the dashboard; only the emails are skipped.
 
+## Admin login
+
+Create an admin (or reset a password) in the terminal, from the project folder:
+
+```bash
+cd backend
+venv/bin/python create_admin.py you@example.com
+```
+
+Then make sure the email is in `ADMIN_EMAILS` in `backend/.env` and restart the app. Details and troubleshooting: [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Changing the website content
 
-- **Company name, TIN, years of experience:** `src/data/company.js`.
+- **Company name, TIN, years of experience, address and logo:** `src/data/company.js`. To use your own logo, put the image in `public/` and change `logo` there (the default `public/logo.svg` is a placeholder).
 - **Contact details:** `src/data/contact.js`. Fill in email, phone, WhatsApp (digits only), YouTube and social links. Empty values are hidden.
-- **Services:** the list at the top of `src/components/services.jsx`.
+- **Services:** the list in `src/data/services.js`. The first two (architectural study and construction) are the main business and are shown larger. Services marked `paid: true` show a "Paid service" tag and a note in the project form that payment is arranged with the team, not on the website. The same list feeds the "Service you need" choice in the form.
 - **Other text:** `src/components/aboutCompany.jsx`, `experiences.jsx` and the hero in `src/pages/home.jsx`.
 - **Colours and fonts:** the variables at the top of `src/site.css`.
 

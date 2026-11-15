@@ -148,7 +148,7 @@ UNIT
 cat > deploy/nginx-mpala.conf <<'NGINX'
 server {
     listen 80;
-    server_name __DOMAIN__;
+    server_name __DOMAIN__ www.__DOMAIN__;
 
     root /var/www/mpala;
     index index.html;
@@ -191,8 +191,13 @@ Done. To go live, run these on the server (they need sudo):
   sudo nginx -t && sudo systemctl reload nginx
 
   # 4. HTTPS (the website and dashboard should only be used over HTTPS)
-  sudo certbot --nginx -d $DOMAIN
+  sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN
+
+DNS records needed at your DNS provider (Cloudflare: DNS only, grey cloud):
+  A      @     <this server's IP>
+  CNAME  www   $DOMAIN
 
 Then open https://$DOMAIN and https://$DOMAIN/admin.
+No admin login yet?  cd backend && venv/bin/python create_admin.py
 To publish a new version later: git pull, ./deploy.sh --domain $DOMAIN, repeat step 1, then sudo systemctl restart mpala-api.
 MSG

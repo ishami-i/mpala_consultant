@@ -1,12 +1,14 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
 
+import config
 from database.db import get_db_connection
 from email_notification.mailer import notify_company, thank_client
 
 project_routes = Blueprint("project_routes", __name__)
 
-REQUIRED = ["name", "email", "phone", "UPI", "location", "projectDetails", "budget"]
+REQUIRED = ["name", "email", "phone", "UPI", "location", "service", "projectDetails", "budget"]
+LABELS = dict(config.GALLERY_CATEGORIES)
 STATUSES = {"new", "reviewing", "contacted", "closed"}
 
 
@@ -15,6 +17,12 @@ def iso(value):
     if hasattr(value, "isoformat"):
         return value.isoformat()
     return str(value).replace(" ", "T") + "Z"
+
+
+def with_service(row):
+    row["service_label"] = LABELS.get(row.get("service"), "")
+    row["paid_service"] = row.get("service") in config.PAID_SERVICES
+    return row
 
 
 def admin_only():
@@ -28,6 +36,8 @@ def submit_project():
     missing = [f for f in REQUIRED if not str(data.get(f, "")).strip()]
     if missing:
         return jsonify({"error": f"Missing: {', '.join(missing)}"}), 400
+    if data["service"] not in LABELS:
+        return jsonify({"error": "Choose a service"}), 400
     try:
         budget = float(data["budget"])
     except ValueError:
@@ -38,10 +48,10 @@ def submit_project():
     try:
         cur.execute(
             """INSERT INTO projects
-               (owner_name, email, phone, upi, location, project_details, budget)
-               VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+               (owner_name, email, phone, upi, location, service, project_details, budget)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
             (data["name"], data["email"], data["phone"], data["UPI"],
-             data["location"], data["projectDetails"], budget),
+             data["location"], data["service"], data["projectDetails"], budget),
         )
         conn.commit()
         project_id = cur.lastrowid
@@ -54,7 +64,7 @@ def submit_project():
 
     # Project is saved; a mail failure must not lose it
     try:
-        notify_company(project_id, data["name"], budget)
+        notify_company(project_id, data["name"], budget, LABELS[data["service"]])
         thank_client(data["email"], data["name"])
     except Exception as e:
         print("Email failed:", e)
@@ -72,13 +82,14 @@ def list_projects():
     cur = conn.cursor()
     try:
         cur.execute(
-            "SELECT project_id, owner_name, location, budget, status, created_at "
+            "SELECT project_id, owner_name, location, service, budget, status, created_at "
             "FROM projects ORDER BY created_at DESC, project_id DESC"
         )
         rows = cur.fetchall()
         for r in rows:
             r["budget"] = float(r["budget"])
             r["created_at"] = iso(r["created_at"])
+            with_service(r)
         return jsonify(rows), 200
     finally:
         cur.close()
@@ -100,7 +111,7 @@ def get_project(project_id):
             return jsonify({"error": "Project not found"}), 404
         row["budget"] = float(row["budget"])
         row["created_at"] = iso(row["created_at"])
-        return jsonify(row), 200
+        return jsonify(with_service(row)), 200
     finally:
         cur.close()
         conn.close()

@@ -14,7 +14,7 @@ Browser ──HTTPS──> nginx ──/        ──> website files (/var/www/
 ## 1. What you need
 
 - A Linux server you can log in to with `sudo`.
-- A domain name whose DNS `A` record points to the server's IP address (certbot needs this for HTTPS).
+- A domain name with two DNS records at your DNS provider: an `A` record for `@` pointing to the server's IP address, and a `CNAME` record for `www` pointing to your domain. Without the `www` record, `www.yourdomain` does not work. In Cloudflare set both to **DNS only** (grey cloud) until HTTPS works.
 - Mail settings for the notification emails (for Gmail: an app password, which needs 2-step verification on the account).
 
 ## 2. Prepare the server
@@ -166,10 +166,18 @@ sudo nginx -t && sudo systemctl reload nginx
 **HTTPS**
 
 ```bash
-sudo certbot --nginx -d example.com
+sudo certbot --nginx -d example.com -d www.example.com
 ```
 
-Add `-d www.example.com` if you also use the `www` name (and add it to `server_name` in the nginx file first). Certbot renews the certificate automatically.
+The generated nginx file already answers to both `example.com` and `www.example.com`. If you installed an older nginx file that only has `example.com`, add the `www` name and expand the certificate:
+
+```bash
+sudo sed -i 's/server_name example.com;/server_name example.com www.example.com;/' /etc/nginx/sites-available/mpala
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d example.com -d www.example.com
+```
+
+Certbot renews the certificate automatically.
 
 ## 8. Check that it works
 
@@ -225,6 +233,32 @@ To automate it, add a daily job with `crontab -e` and keep copies off the server
 - [ ] Firewall allows only SSH and web traffic; MySQL is not open to the internet.
 - [ ] Database and `backend/uploads` backups are taken and stored off the server.
 - [ ] Optional: hide the API documentation page by adding `location /api/docs { return 404; }` above `location /api/` in the nginx file, then reload nginx.
+
+## Create or reset an admin login
+
+On the server (as the user that owns the project), from the project folder:
+
+```bash
+cd backend
+venv/bin/python create_admin.py admin@yourdomain.com
+```
+
+It asks for a password (8+ characters) twice. If the email already exists, its password is replaced, so the same command resets a forgotten password. Then:
+
+1. Make sure the email is in `ADMIN_EMAILS` in `backend/.env` (comma-separated). Without it the sign-in works but the dashboard says the account is not an admin.
+2. Restart the API: `sudo systemctl restart mpala-api`.
+3. Sign in at `https://yourdomain.com/admin` with exactly that email, in lowercase.
+
+Locally the same command works with `backend/venv/bin/python backend/create_admin.py` (or `.venv`, whichever you use).
+
+If you still cannot open `/admin`, check in this order:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5000/api/gallery   # 200 = the API is running
+sudo systemctl status mpala-api --no-pager
+sudo nginx -t
+ls /var/www/mpala                                                            # index.html must be there
+```
 
 ## Small servers (512 MB to 1 GB of RAM)
 
@@ -293,6 +327,8 @@ Then run `./deploy.sh` on the server as usual (it rebuilds, so make sure swap is
 | `mysql.service ... Result: oom-kill` | The server ran out of memory. Follow "Small servers" above: add swap and the low-memory MySQL config. |
 | `deploy.sh` says Node.js is too old | Install Node 22 from NodeSource ("Small servers", step 4). |
 | `sudo: unable to resolve host` | Harmless. Fix it with `echo "127.0.1.1 $(hostname)" >> /etc/hosts`. |
+| `www.yourdomain` does not open | Add the DNS record `CNAME  www  yourdomain` (DNS only), make sure nginx `server_name` lists the `www` name, then run `sudo certbot --nginx -d yourdomain -d www.yourdomain`. |
+| Cannot sign in to `/admin` | Create the login with `create_admin.py` (see "Create or reset an admin login") and check the email is in `ADMIN_EMAILS`. |
 | `Could not set up MySQL` | Check `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, that MySQL is running (`sudo systemctl status mysql`) and that the user has rights on the database (step 3). |
 | `502 Bad Gateway` | The API is not running or uses another port. Check `sudo systemctl status mpala-api`, the logs, and that `BACKEND_PORT` matches the nginx file. |
 | Website loads but forms and dashboard fail | The site was built for a different address. Run `./deploy.sh --domain <the real domain>` again and re-publish `dist/`. |

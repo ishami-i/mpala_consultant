@@ -36,6 +36,9 @@ if ENGINE == "sqlite":
     conn = sqlite3.connect(sqlite_path())
     for stmt in statements(os.path.join(HERE, "database", "schema.sqlite.sql")):
         conn.execute(stmt)
+    # existing databases: add the service column
+    if "service" not in [r[1] for r in conn.execute("PRAGMA table_info(projects)")]:
+        conn.execute("ALTER TABLE projects ADD COLUMN service TEXT NOT NULL DEFAULT ''")
     if hashed:
         conn.execute("INSERT OR IGNORE INTO users (email, password) VALUES (?, ?)", (seed_email, hashed))
     conn.commit()
@@ -70,6 +73,10 @@ cur.execute(f"USE `{name}`")
 for stmt in statements(os.path.join(HERE, "database", "schema.sql")):
     if not re.match(r"(?i)(create database|use)\b", stmt):
         cur.execute(stmt)
+# existing databases: add the service column
+cur.execute("SHOW COLUMNS FROM projects LIKE 'service'")
+if not cur.fetchone():
+    cur.execute("ALTER TABLE projects ADD COLUMN service VARCHAR(50) NOT NULL DEFAULT '' AFTER location")
 if hashed:
     cur.execute("INSERT IGNORE INTO users (email, password) VALUES (%s, %s)", (seed_email, hashed))
 cur.execute("SELECT COUNT(*) FROM users")

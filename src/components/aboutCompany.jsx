@@ -7,10 +7,13 @@ export default function AboutCompany() {
         <div>
           <h2>About {company.name}</h2>
           <p>
-            We are a consulting and construction company working with clients on land, design and building projects. Our team has more than two decades of experience in the business.
+            We are a consulting company whose main business is architectural study and construction, working with clients on land, design and building projects. Our team has more than two decades of experience in the business.
           </p>
           <p>
             We are a registered business, TIN <strong>{company.tin}</strong>.
+          </p>
+          <p>
+            Our office is in <a href={company.mapsUrl} target="_blank" rel="noreferrer">{company.address}</a>.
           </p>
           <h3>Our mission</h3>
           <p>

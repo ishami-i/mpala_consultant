@@ -1,8 +1,10 @@
 import ProjectForm from "./projectForm";
 import { contact } from "../data/contact";
+import { company } from "../data/company";
 
 export default function GetInTouch() {
   const links = [
+    { label: "Location", href: company.mapsUrl, text: company.address },
     contact.email && { label: "Email", href: `mailto:${contact.email}`, text: contact.email },
     contact.phone && { label: "Phone", href: `tel:${contact.phone.replace(/\s/g, "")}`, text: contact.phone },
     contact.whatsapp && { label: "WhatsApp", href: `https://wa.me/${contact.whatsapp}`, text: "Message us" },
