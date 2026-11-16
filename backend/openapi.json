@@ -184,7 +184,9 @@
                   "email",
                   "phone",
                   "UPI",
-                  "location",
+                  "province",
+                  "district",
+                  "sector",
                   "service",
                   "projectDetails",
                   "budget"
@@ -202,10 +204,6 @@
                   },
                   "UPI": {
                     "type": "string"
-                  },
-                  "location": {
-                    "type": "string",
-                    "example": "Kimironko, Gasabo, Kigali City"
                   },
                   "projectDetails": {
                     "type": "string"
@@ -226,6 +224,25 @@
                       "brokerage"
                     ],
                     "example": "architecture"
+                  },
+                  "province": {
+                    "type": "string",
+                    "enum": [
+                      "Kigali City",
+                      "Northern",
+                      "Southern",
+                      "Eastern",
+                      "Western"
+                    ],
+                    "example": "Kigali City"
+                  },
+                  "district": {
+                    "type": "string",
+                    "example": "Gasabo"
+                  },
+                  "sector": {
+                    "type": "string",
+                    "example": "Gisozi"
                   }
                 }
               }
@@ -341,6 +358,62 @@
         "responses": {
           "200": {
             "description": "Full project"
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete a project",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
           },
           "403": {
             "description": "Error",
@@ -680,6 +753,54 @@
             }
           },
           "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stats": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Overview numbers: totals, per province, per service, per month, growth",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistics"
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Error",
             "content": {
               "application/json": {

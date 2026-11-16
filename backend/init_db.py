@@ -24,6 +24,12 @@ seed_pw = os.getenv("ADMIN_SEED_PASSWORD")
 hashed = bcrypt.hashpw(seed_pw.encode(), bcrypt.gensalt()).decode() if seed_email and seed_pw else None
 
 
+def split_location(location):
+    """Old projects store 'Sector, District, Province' in one text. Return (province, district, sector)."""
+    parts = [p.strip() for p in (location or "").split(",")]
+    return (parts[2], parts[1], parts[0]) if len(parts) == 3 else ("", "", "")
+
+
 def statements(path):
     sql = open(path, encoding="utf-8").read()
     sql = re.sub(r"--.*", "", sql)
@@ -39,6 +45,15 @@ if ENGINE == "sqlite":
     # existing databases: add the service column
     if "service" not in [r[1] for r in conn.execute("PRAGMA table_info(projects)")]:
         conn.execute("ALTER TABLE projects ADD COLUMN service TEXT NOT NULL DEFAULT ''")
+    # existing databases: province, district and sector columns, filled from the old location text
+    have = [r[1] for r in conn.execute("PRAGMA table_info(projects)")]
+    for col in ("province", "district", "sector"):
+        if col not in have:
+            conn.execute(f"ALTER TABLE projects ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")
+    for pid, loc in conn.execute("SELECT project_id, location FROM projects WHERE province = ''").fetchall():
+        prov, dist, sec = split_location(loc)
+        if prov:
+            conn.execute("UPDATE projects SET province=?, district=?, sector=? WHERE project_id=?", (prov, dist, sec, pid))
     if hashed:
         conn.execute("INSERT OR IGNORE INTO users (email, password) VALUES (?, ?)", (seed_email, hashed))
     conn.commit()
@@ -77,6 +92,16 @@ for stmt in statements(os.path.join(HERE, "database", "schema.sql")):
 cur.execute("SHOW COLUMNS FROM projects LIKE 'service'")
 if not cur.fetchone():
     cur.execute("ALTER TABLE projects ADD COLUMN service VARCHAR(50) NOT NULL DEFAULT '' AFTER location")
+# existing databases: province, district and sector columns, filled from the old location text
+for col, width in (("province", 50), ("district", 100), ("sector", 100)):
+    cur.execute("SHOW COLUMNS FROM projects LIKE %s", (col,))
+    if not cur.fetchone():
+        cur.execute(f"ALTER TABLE projects ADD COLUMN {col} VARCHAR({width}) NOT NULL DEFAULT ''")
+cur.execute("SELECT project_id, location FROM projects WHERE province = ''")
+for pid, loc in cur.fetchall():
+    prov, dist, sec = split_location(loc)
+    if prov:
+        cur.execute("UPDATE projects SET province=%s, district=%s, sector=%s WHERE project_id=%s", (prov, dist, sec, pid))
 if hashed:
     cur.execute("INSERT IGNORE INTO users (email, password) VALUES (%s, %s)", (seed_email, hashed))
 cur.execute("SELECT COUNT(*) FROM users")

@@ -3,6 +3,7 @@ import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from werkzeug.exceptions import HTTPException
 
 import config
 from docs import spec_bp, swagger_bp
@@ -24,9 +25,17 @@ app.register_blueprint(gallery_routes, url_prefix="/api")
 app.register_blueprint(spec_bp, url_prefix="/api")
 app.register_blueprint(swagger_bp)  # already prefixed with /api/docs
 
-@app.errorhandler(413)
-def too_large(_e):
-    return jsonify({"error": "That upload is too large. Send fewer photos at once."}), 413
+@app.errorhandler(HTTPException)
+def http_error(e):
+    if e.code == 413:
+        return jsonify({"error": "That upload is too large. Send fewer photos at once."}), 413
+    return jsonify({"error": e.description}), e.code
+
+
+@app.errorhandler(Exception)
+def server_error(_e):
+    app.logger.exception("Unhandled error")
+    return jsonify({"error": "Server error. The details are in the API log."}), 500
 
 
 if __name__ == "__main__":

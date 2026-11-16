@@ -7,7 +7,7 @@ export default function GetInTouch() {
     { label: "Location", href: company.mapsUrl, text: company.address },
     contact.email && { label: "Email", href: `mailto:${contact.email}`, text: contact.email },
     contact.phone && { label: "Phone", href: `tel:${contact.phone.replace(/\s/g, "")}`, text: contact.phone },
-    contact.whatsapp && { label: "WhatsApp", href: `https://wa.me/${contact.whatsapp}`, text: "Message us" },
+    contact.whatsapp && { label: "WhatsApp", href: `https://wa.me/${contact.whatsapp.replace(/\D/g, "")}`, text: "Message us" },
     contact.youtube && { label: "YouTube", href: contact.youtube, text: "Watch our videos" },
     contact.linkedin && { label: "LinkedIn", href: contact.linkedin, text: "Follow" },
     contact.facebook && { label: "Facebook", href: contact.facebook, text: "Follow" },

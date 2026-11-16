@@ -71,3 +71,36 @@
   .adm-upload { position: static; }
   .adm-top { flex-wrap: wrap; }
 }
+
+/* Overview */
+.adm-stats { padding: 1.5rem; display: grid; gap: 1.5rem; max-width: 1100px; }
+.adm-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.adm-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.25rem; }
+.adm-card p { margin: 0; color: var(--muted); font-size: .9rem; }
+.adm-card strong { display: block; font-family: Georgia, serif; font-size: 2.4rem; line-height: 1.2; color: var(--accent); }
+.adm-card small { display: block; color: var(--muted); }
+.adm-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 1.25rem; }
+.adm-panel h2 { font-size: 1.05rem; margin: 0 0 .75rem; }
+.adm-panel > .adm-muted { padding: 0; margin: -.4rem 0 1rem; }
+.adm-two { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.adm-hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: .65rem; }
+.adm-hbars li { display: grid; grid-template-columns: minmax(7rem, 12rem) 1fr 2rem; gap: .75rem; align-items: center; }
+.adm-hbar-name em { font-style: normal; font-size: .72rem; margin-left: .4rem; padding: .05rem .4rem; border: 1px solid var(--muted); border-radius: 99px; color: var(--muted); }
+.adm-hbar-track { height: .7rem; background: var(--line); border-radius: 3px; overflow: hidden; }
+.adm-hbar-fill { display: block; height: 100%; background: var(--accent); }
+.adm-hbar-n { text-align: right; }
+.adm-months { display: grid; grid-template-columns: repeat(12, 1fr); gap: .4rem; height: 190px; }
+.adm-month { display: flex; flex-direction: column; align-items: center; gap: .25rem; min-width: 0; }
+.adm-month-n { font-size: .8rem; color: var(--muted); }
+.adm-month-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.adm-month-bar { display: block; width: 100%; min-height: 2px; background: var(--accent); border-radius: 3px 3px 0 0; }
+.adm-month-l { font-size: .72rem; color: var(--muted); }
+.adm-status-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
+.adm-status-list li { display: flex; align-items: center; gap: .6rem; }
+.adm-delete { margin-top: 2rem; }
+@media (max-width: 760px) {
+  .adm-stats { padding: 1.25rem; }
+  .adm-two { grid-template-columns: 1fr; }
+  .adm-hbars li { grid-template-columns: minmax(6rem, 9rem) 1fr 1.6rem; gap: .5rem; }
+  .adm-months { gap: .2rem; }
+}

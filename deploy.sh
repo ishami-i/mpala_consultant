@@ -26,9 +26,12 @@ set_key() { { grep -v "^$1=" "$ENVF" || true; } > "$ENVF.tmp"; printf '%s=%s\n' 
 # ---------- start (used by systemd) ----------
 if [[ "${1:-}" == "start" ]]; then
   [[ -x "$ROOT/backend/venv/bin/gunicorn" ]] || die "gunicorn is missing. Run ./deploy.sh --domain <your-domain> first."
+  START_PORT="$(val BACKEND_PORT)"; START_PORT="${START_PORT:-5000}"   # read before leaving the project folder
   cd backend
+  # Idempotent: adds any new tables or columns so an update can never leave the API with an old database
+  "$ROOT/backend/venv/bin/python" init_db.py >/dev/null || echo "warning: the database setup step failed; run backend/venv/bin/python backend/init_db.py to see why" >&2
   exec "$ROOT/backend/venv/bin/gunicorn" --workers "${WORKERS:-3}" \
-       --bind "127.0.0.1:$(val BACKEND_PORT | grep . || echo 5000)" app:app
+       --bind "127.0.0.1:$START_PORT" app:app
 fi
 
 # ---------- arguments ----------

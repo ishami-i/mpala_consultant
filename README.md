@@ -7,9 +7,9 @@ Clients describe their project on the website. The company gets a short email (n
 ## What it does
 
 - **Public website:** home page with About, Services, Experience and a "Tell us about your project" form. Light and dark mode, works on phones.
-- **Project form:** name, email, phone, UPI (land parcel ID), location (province, district, sector), budget (RWF) and a description. The project is saved first; emails are sent after.
+- **Project form:** name, email, phone, UPI (land parcel ID), location (chosen in three steps: province, then district, then sector), the service needed, budget (RWF) and a description. The project is saved first; emails are sent after.
 - **Emails:** the company receives only the client's name, the budget and a link to the dashboard. The client receives a thank-you.
-- **Admin dashboard (`/admin`):** sign in, see all projects, open one to read everything the client sent, filter by status and change it (`new`, `reviewing`, `contacted`, `closed`).
+- **Admin dashboard (`/admin`):** sign in to three tabs. **Overview** counts projects in total and in the last 30 days (with growth against the 30 days before), per month for the last year, per province and per service, and by status. **Projects** lists every project: open one to read everything the client sent, change its status (`new`, `reviewing`, `contacted`, `closed`) or delete it. **Gallery** manages the photos.
 - **Photo gallery:** one gallery per service (construction and architecture first). Admins upload photos in the dashboard (**Gallery** tab); they appear on the public `/gallery` page at once, with filters per service and a full-size viewer. A "View gallery" link appears under a service on the home page as soon as it has photos.
 - **API with Swagger UI:** interactive documentation at `/api/docs`.
 - **Databases:** SQLite for local testing (default), MySQL for deployment.
@@ -87,6 +87,9 @@ Settings live in `backend/.env`. `backend/.env.example` lists every key with com
 | `ADMIN_EMAILS` | Comma-separated emails allowed to open the dashboard | set at first run |
 | `ALLOW_REGISTRATION` | `true` lets anyone create a user via `/api/register`. Use `false` in production. | `true` (deploy.sh sets `false`) |
 | `COMPANY_EMAIL` | Where "new project" emails go | |
+| `PUBLIC_EMAIL` | The address clients see in emails and reply to | `info@<your domain>` |
+| `SITE_URL` | Website address used for the links in emails | `DASHBOARD_URL` without `/admin` |
+| `MAIL_FROM_NAME` | Name shown next to the sender address | `Mpala Consultant` |
 | `DASHBOARD_URL` | Dashboard address used in the email link | `http://localhost:5173/admin` |
 | `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS` | SMTP server (`MAIL_USE_TLS=True` for port 587) | port 587 |
 | `MAIL_USERNAME`, `MAIL_PASSWORD` | SMTP login (for Gmail use an app password; for Cloudflare: `api_token` and an API token) | |
@@ -149,6 +152,8 @@ Full interactive documentation: `/api/docs`. Summary:
 | `GET /api/admin/projects` | admin | List projects (summary) |
 | `GET /api/admin/projects/<id>` | admin | Everything about one project |
 | `PATCH /api/admin/projects/<id>/status` | admin | Set status |
+| `DELETE /api/admin/projects/<id>` | admin | Delete a project |
+| `GET /api/admin/stats` | admin | Overview numbers (totals, per province, per service, per month, growth) |
 | `GET /api/gallery/categories` | public | Galleries with photo counts |
 | `GET /api/gallery` | public | List photos (`?category=slug`) |
 | `GET /api/uploads/<file>` | public | A photo file |

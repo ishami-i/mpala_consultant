@@ -20,6 +20,24 @@ COMPANY_EMAIL = os.getenv("COMPANY_EMAIL", MAIL_USERNAME)
 ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:5173/admin")
 
+# --- Emails sent to clients ---------------------------------------------------
+from urllib.parse import urlparse  # noqa: E402
+
+# Public address of the website, used for the links in emails (default: the dashboard address minus /admin)
+SITE_URL = (os.getenv("SITE_URL") or DASHBOARD_URL.split("/admin")[0]).rstrip("/")
+_host = (urlparse(SITE_URL).hostname or "").removeprefix("www.")
+# The address clients see and reply to. Default: info@<your domain> in production, COMPANY_EMAIL locally.
+PUBLIC_EMAIL = os.getenv("PUBLIC_EMAIL") or (
+    f"info@{_host}" if _host and _host not in ("localhost", "127.0.0.1") else COMPANY_EMAIL
+)
+MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "Mpala Consultant")
+COMPANY_NAME = "Mpala Consultant"
+COMPANY_ADDRESS = "Gisozi, Gasabo, Kigali, Rwanda"
+COMPANY_TIN = "156496048"
+
+# The five provinces of Rwanda, as used in src/data/location.json
+PROVINCES = ["Kigali City", "Northern", "Southern", "Eastern", "Western"]
+
 # Public sign-up via POST /api/register. Set to false in production (create admins with init_db.py / deploy.sh).
 ALLOW_REGISTRATION = os.getenv("ALLOW_REGISTRATION", "true").lower() == "true"
 

@@ -234,6 +234,41 @@ To automate it, add a daily job with `crontab -e` and keep copies off the server
 - [ ] Database and `backend/uploads` backups are taken and stored off the server.
 - [ ] Optional: hide the API documentation page by adding `location /api/docs { return 404; }` above `location /api/` in the nginx file, then reload nginx.
 
+## Emails: `info@` not working, and client emails going to spam
+
+### `info@yourdomain` does not receive mail
+
+`info@` is not a mailbox. It is a forwarding rule in Cloudflare Email Routing, so it only works when every link of this chain is in place. Check them in order in the Cloudflare dashboard, under your domain, **Email** → **Email Routing**:
+
+1. **Routing is enabled and the DNS records exist.** The overview must not show a warning about missing records. If it does, use the button to add them. Check from the server: `dig +short MX yourdomain.com` should list hosts ending in `.mx.cloudflare.net`. Remove any other, older `MX` records (for example from a previous web host): mixed records make mail go to the wrong place.
+2. **The destination inbox is Verified** (Destination addresses). *Pending* means the verification link in the email Cloudflare sent was never clicked. Look in the spam folder of that inbox; if there is nothing, delete the address and add it again. The destination must be a real inbox such as your Gmail, never an `@yourdomain` address.
+3. **A rule exists and is active** (Routing rules): custom address `info` → Send to an email → your verified inbox. Do the same for any other address you publish.
+4. **Test from a different account.** Send a message to `info@yourdomain` from another address (for example a friend's, not the Gmail you forward to). Mail from your own Gmail to a forward that lands back in the same Gmail is often hidden by Gmail. Then open **Email Routing** → **Overview** (the activity log) to see whether Cloudflare received and forwarded it, or why it did not.
+5. **Only one SPF record.** If you also send through Gmail, merge them into one `TXT` record at `@`: `v=spf1 include:_spf.mx.cloudflare.net include:_spf.google.com ~all`. Two separate SPF records make both invalid.
+
+Replies to `info@` go to the inbox you forward to. To also *send* as `info@` from that Gmail, see the stop-gap below.
+
+### Client emails land in spam
+
+The thank-you email used to be two lines of plain text, sent from a brand-new `@gmail.com` account, with the same address as sender and reply-to and no links. Spam filters treat that as suspicious. The email now has:
+
+- a text and an HTML version, with a clear sender name (`Mpala Consultant`);
+- links to the website, the gallery and the services, and your public address `info@yourdomain` (set `PUBLIC_EMAIL` or leave it to default to `info@<your domain>`);
+- what was requested (service and place), what happens next, and a signature with your address and TIN;
+- `Reply-To` set to `info@yourdomain`, and a line saying why the client is receiving the message.
+
+That improves things, but one weakness remains: the mail is still sent from a free Gmail account, not from your own domain. For the best result, send from `no-reply@yourdomain` through a service that signs mail for your domain (SPF and DKIM):
+
+- **Cloudflare Email Service** (Option A in step 5): set `MAIL_FROM=no-reply@yourdomain.com`.
+- Another email-sending service where you verify your domain by adding the DNS records it gives you (set its SMTP login in the `MAIL_*` settings).
+- Google Workspace, if you want real mailboxes as well.
+
+**Stop-gap while you stay on Gmail:** in Gmail, Settings → Accounts → **Send mail as** → add `info@yourdomain` (the confirmation email arrives through your working `info@` forward), then set `MAIL_FROM=info@yourdomain.com`. Clients then see your domain in the From line. Do not publish a strict DMARC policy (`p=quarantine` or `p=reject`) while you use this: Gmail signs those messages for `gmail.com`, not for your domain. A DMARC record with `p=none` is safe.
+
+Other things that help: ask clients to mark the first message as "Not spam", test a real message at mail-tester.com, and avoid testing by sending many emails to the same few addresses.
+
+After applying an update, the API brings its own database up to date every time it starts, so a restart is enough: `sudo systemctl restart mpala-api`.
+
 ## Create or reset an admin login
 
 On the server (as the user that owns the project), from the project folder:

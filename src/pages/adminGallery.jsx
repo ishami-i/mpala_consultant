@@ -43,8 +43,9 @@ export default function AdminGallery({ token, onAuthFail }) {
     try {
       const res = await fetch(`${API}/admin/gallery`, { method: "POST", headers: authed, body });
       if (res.status === 401 || res.status === 422) return onAuthFail();
-      const data = await res.json();
-      if (!res.ok) return setError(data.error || "Upload failed");
+      let data = {};
+      try { data = await res.json(); } catch { /* not JSON, e.g. an error page */ }
+      if (!res.ok) return setError(data.error || `Upload failed (error ${res.status})`);
       const label = categories.find((c) => c.slug === category)?.label;
       setNotice(`${data.uploaded} photo${data.uploaded === 1 ? "" : "s"} added to ${label}. They are now on the gallery page.`);
       setFiles([]);

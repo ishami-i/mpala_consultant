@@ -16,7 +16,9 @@ export default function ProjectForm() {
         email: "",
         phone: "",
         UPI: "",
-        location: "",
+        province: "",
+        district: "",
+        sector: "",
         service: initialService(),
         projectDetails: "",
         budget: "",
@@ -26,10 +28,19 @@ export default function ProjectForm() {
     const navigate = useNavigate();
     const selected = SERVICES.find((s) => s.slug === formData.service);
 
+    // Province -> district -> sector: changing one clears the ones below it
+    const districts = formData.province ? Object.keys(locationsData[formData.province] || {}) : [];
+    const sectors = formData.province && formData.district
+        ? [...new Set(locationsData[formData.province]?.[formData.district] || [])]
+        : [];
+
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
+        const { name, value } = e.target;
+        setFormData((prev) => {
+            const next = { ...prev, [name]: value };
+            if (name === "province") { next.district = ""; next.sector = ""; }
+            if (name === "district") { next.sector = ""; }
+            return next;
         });
     };
     
@@ -43,8 +54,9 @@ export default function ProjectForm() {
                 body: JSON.stringify(formData),
             });
             if (!res.ok) {
-                const data = await res.json();
-                return setError(data.error || "Could not send your project. Please try again.");
+                let data = {};
+                try { data = await res.json(); } catch { /* not JSON, e.g. an error page */ }
+                return setError(data.error || `Could not send your project (error ${res.status}). Please try again.`);
             }
             navigate("/thank-you");
         } catch {
@@ -121,26 +133,44 @@ export default function ProjectForm() {
                         />
                     </div>
                     <div>
-                        <label htmlFor="location">Location:</label>
+                        <label htmlFor="province">Province:</label>
+                        <select id="province" name="province" value={formData.province} onChange={handleChange} required>
+                            <option value="">Choose a province</option>
+                            {Object.keys(locationsData).map((p) => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="district">District:</label>
                         <select
-                            id="location"
-                            name="location"
-                            value={formData.location}
+                            id="district"
+                            name="district"
+                            value={formData.district}
                             onChange={handleChange}
                             required
+                            disabled={!formData.province}
                         >
-                            <option value="">Select a location</option>
-                            {Object.entries(locationsData).flatMap(([province, districts]) =>
-                                Object.entries(districts).map(([district, sectors]) => (
-                                    <optgroup key={`${province}-${district}`} label={`${district}, ${province}`}>
-                                        {[...new Set(sectors)].map((sector) => (
-                                            <option key={sector} value={`${sector}, ${district}, ${province}`}>
-                                                {sector}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ))
-                            )}
+                            <option value="">{formData.province ? "Choose a district" : "Choose a province first"}</option>
+                            {districts.map((d) => (
+                                <option key={d} value={d}>{d}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="sector">Sector:</label>
+                        <select
+                            id="sector"
+                            name="sector"
+                            value={formData.sector}
+                            onChange={handleChange}
+                            required
+                            disabled={!formData.district}
+                        >
+                            <option value="">{formData.district ? "Choose a sector" : "Choose a district first"}</option>
+                            {sectors.map((x) => (
+                                <option key={x} value={x}>{x}</option>
+                            ))}
                         </select>
                     </div>
                     <div>
